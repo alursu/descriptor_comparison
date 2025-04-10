@@ -1,0 +1,9 @@
+C:/study/8 семестр/нирс/code/build/CMakeFiles/Experimental.dir
+C:/study/8 семестр/нирс/code/build/CMakeFiles/Nightly.dir
+C:/study/8 семестр/нирс/code/build/CMakeFiles/Continuous.dir
+C:/study/8 семестр/нирс/code/build/CMakeFiles/NightlyMemoryCheck.dir
+C:/study/8 семестр/нирс/code/build/CMakeFiles/code.dir
+C:/study/8 семестр/нирс/code/build/CMakeFiles/PACKAGE.dir
+C:/study/8 семестр/нирс/code/build/CMakeFiles/RUN_TESTS.dir
+C:/study/8 семестр/нирс/code/build/CMakeFiles/ALL_BUILD.dir
+C:/study/8 семестр/нирс/code/build/CMakeFiles/ZERO_CHECK.dir

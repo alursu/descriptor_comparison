@@ -1,0 +1,10 @@
+^C:\STUDY\8 СЕМЕСТР\НИРС\CODE\BUILD\CMAKEFILES\6F86212EB84853ACB07D8E10A35CA983\GENERATE.STAMP.RULE
+setlocal
+C:\CMake\bin\cmake.exe "-SC:/study/8 семестр/нирс/code" "-BC:/study/8 семестр/нирс/code/build" --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file "C:/study/8 семестр/нирс/code/build/code.sln"
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

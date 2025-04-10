@@ -1,0 +1,41 @@
+# CMake generation dependency list for this directory.
+C:/CMake/share/cmake-3.30/Modules/CMakeCInformation.cmake
+C:/CMake/share/cmake-3.30/Modules/CMakeCXXInformation.cmake
+C:/CMake/share/cmake-3.30/Modules/CMakeCommonLanguageInclude.cmake
+C:/CMake/share/cmake-3.30/Modules/CMakeDependentOption.cmake
+C:/CMake/share/cmake-3.30/Modules/CMakeGenericSystem.cmake
+C:/CMake/share/cmake-3.30/Modules/CMakeInitializeConfigs.cmake
+C:/CMake/share/cmake-3.30/Modules/CMakeLanguageInformation.cmake
+C:/CMake/share/cmake-3.30/Modules/CMakeRCInformation.cmake
+C:/CMake/share/cmake-3.30/Modules/CMakeSystemSpecificInformation.cmake
+C:/CMake/share/cmake-3.30/Modules/CMakeSystemSpecificInitialize.cmake
+C:/CMake/share/cmake-3.30/Modules/CPack.cmake
+C:/CMake/share/cmake-3.30/Modules/CPackComponent.cmake
+C:/CMake/share/cmake-3.30/Modules/CTest.cmake
+C:/CMake/share/cmake-3.30/Modules/CTestTargets.cmake
+C:/CMake/share/cmake-3.30/Modules/CTestUseLaunchers.cmake
+C:/CMake/share/cmake-3.30/Modules/Compiler/CMakeCommonCompilerMacros.cmake
+C:/CMake/share/cmake-3.30/Modules/Compiler/MSVC-C.cmake
+C:/CMake/share/cmake-3.30/Modules/Compiler/MSVC-CXX.cmake
+C:/CMake/share/cmake-3.30/Modules/Compiler/MSVC.cmake
+C:/CMake/share/cmake-3.30/Modules/DartConfiguration.tcl.in
+C:/CMake/share/cmake-3.30/Modules/FindPackageHandleStandardArgs.cmake
+C:/CMake/share/cmake-3.30/Modules/FindPackageMessage.cmake
+C:/CMake/share/cmake-3.30/Modules/Platform/Windows-Initialize.cmake
+C:/CMake/share/cmake-3.30/Modules/Platform/Windows-MSVC-C.cmake
+C:/CMake/share/cmake-3.30/Modules/Platform/Windows-MSVC-CXX.cmake
+C:/CMake/share/cmake-3.30/Modules/Platform/Windows-MSVC.cmake
+C:/CMake/share/cmake-3.30/Modules/Platform/Windows.cmake
+C:/CMake/share/cmake-3.30/Modules/Platform/WindowsPaths.cmake
+C:/CMake/share/cmake-3.30/Templates/CPackConfig.cmake.in
+C:/opencv/build/x64/vc16/lib/OpenCVConfig-version.cmake
+C:/opencv/build/x64/vc16/lib/OpenCVConfig.cmake
+C:/opencv/build/x64/vc16/lib/OpenCVModules-debug.cmake
+C:/opencv/build/x64/vc16/lib/OpenCVModules-release.cmake
+C:/opencv/build/x64/vc16/lib/OpenCVModules.cmake
+C:/study/8 семестр/нирс/code/CMakeLists.txt
+C:/study/8 семестр/нирс/code/build/CMakeFiles/3.30.0-rc4/CMakeCCompiler.cmake
+C:/study/8 семестр/нирс/code/build/CMakeFiles/3.30.0-rc4/CMakeCXXCompiler.cmake
+C:/study/8 семестр/нирс/code/build/CMakeFiles/3.30.0-rc4/CMakeRCCompiler.cmake
+C:/study/8 семестр/нирс/code/build/CMakeFiles/3.30.0-rc4/CMakeSystem.cmake
+C:/vcpkg/scripts/buildsystems/vcpkg.cmake
