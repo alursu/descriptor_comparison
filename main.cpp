@@ -1,7 +1,7 @@
 #include <iostream>
 #include <opencv2/core.hpp>
 #include <opencv2/opencv.hpp>
-#include <opencv2/xfeatures2d.hpp>
+// #include <opencv2/xfeatures2d.hpp>
 #include <ctime>
 #include <filesystem>
 #include <opencv2/core/utils/logger.hpp>
@@ -49,6 +49,65 @@ void drawKeypointsAndLines (cv::Mat &first_img, cv::Mat &second_img, FeatureInfo
     
 };
 
+void calculateAndPrintStatistics(std::vector<double> &distances) {
+
+    std::sort(distances.begin(), distances.end());
+    double sum = 0;
+    for (auto distance : distances) {
+        sum += distance;
+    }
+    double mean = sum / distances.size();
+
+    double median;
+    if (distances.size() % 2 == 0) {
+        median = (distances[int(distances.size() / 2)] + distances[int(distances.size() / 2)-1]) / 2;
+    } else {
+        median = distances[int(distances.size() / 2)];
+    }
+
+    std::cout << "Среднее значение: " << mean << ", медианное значение: " << median << std::endl;
+
+}
+
+void calculateEpipolarDistances (std::vector<cv::KeyPoint> &keypoints_first, std::vector<cv::KeyPoint> &keypoints_second){
+    
+    std::vector<cv::Point2f> keypoints_first_point2f;
+    std::vector<cv::Point2f> keypoints_second_point2f;
+    cv::KeyPoint::convert(keypoints_first, keypoints_first_point2f);
+    cv::KeyPoint::convert(keypoints_second, keypoints_second_point2f);
+
+    std::vector<cv::Point3f> lines_first, lines_second;
+    std::vector<double> distances;
+
+    cv::Mat fundamental_matrix = cv::findFundamentalMat(keypoints_first_point2f, keypoints_second_point2f,cv::USAC_MAGSAC);
+    if (fundamental_matrix.rows == 3 && fundamental_matrix.cols == 3){
+        cv::computeCorrespondEpilines(keypoints_first_point2f, 1, fundamental_matrix, lines_first);
+        cv::computeCorrespondEpilines(keypoints_second_point2f, 2, fundamental_matrix.t(), lines_second);
+
+        for (int i = 0; i<keypoints_first.size(); ++i){
+            double distance_first = std::abs(
+                lines_first[i].x * keypoints_first_point2f[i].x +
+                lines_first[i].y * keypoints_first_point2f[i].y +
+                lines_first[i].z) /
+                std::sqrt(std::pow(lines_first[i].x, 2) + 
+                          std::pow(lines_first[i].y, 2));
+            
+            double distance_second = std::abs(
+                lines_second[i].x * keypoints_second_point2f[i].x +
+                lines_second[i].y * keypoints_second_point2f[i].y +
+                lines_second[i].z) /
+                std::sqrt(std::pow(lines_second[i].x, 2) + 
+                          std::pow(lines_second[i].y, 2));
+            
+            distances.push_back(distance_first + distance_second);
+        }
+        calculateAndPrintStatistics(distances);
+    } else {
+        std::cout << "Error, uncorrect fundamental matrix" << std::endl;
+    }
+
+}
+
 void detectAndComputeAllDescriptors (cv::Mat &first_img, cv::Mat &second_img){
 
     FeatureInfo brisk_frameInfo_first, brisk_frameInfo_second;
@@ -62,6 +121,7 @@ void detectAndComputeAllDescriptors (cv::Mat &first_img, cv::Mat &second_img){
     std::cout << "BRISK working time: " <<  (end_brisk-start_brisk) << std::endl;
     std::vector<cv::DMatch> brisk_matches = MatchDescriptors(brisk_frameInfo_first, brisk_frameInfo_second);
     drawKeypointsAndLines(first_img, second_img, brisk_frameInfo_first, brisk_frameInfo_second, brisk_matches, "BRISK");
+    calculateEpipolarDistances(brisk_frameInfo_first.keypoints, brisk_frameInfo_second.keypoints);
 
 
     FeatureInfo sift_frameInfo_first, sift_frameInfo_second;
@@ -75,6 +135,7 @@ void detectAndComputeAllDescriptors (cv::Mat &first_img, cv::Mat &second_img){
     std::cout << "SIFT working time: " <<  (end_sift-start_sift) << std::endl;
     std::vector<cv::DMatch> sift_matches = MatchDescriptors(sift_frameInfo_first, sift_frameInfo_second);
     drawKeypointsAndLines(first_img, second_img, sift_frameInfo_first, sift_frameInfo_second, sift_matches, "SIFT");
+    calculateEpipolarDistances(sift_frameInfo_first.keypoints, sift_frameInfo_second.keypoints);
     
 
     FeatureInfo orb_frameInfo_first, orb_frameInfo_second;
@@ -88,19 +149,21 @@ void detectAndComputeAllDescriptors (cv::Mat &first_img, cv::Mat &second_img){
     std::cout << "ORB working time: " <<  (end_orb-start_orb) << std::endl;
     std::vector<cv::DMatch> orb_matches = MatchDescriptors(orb_frameInfo_first, orb_frameInfo_second);
     drawKeypointsAndLines(first_img, second_img, orb_frameInfo_first, orb_frameInfo_second, orb_matches, "ORB");
+    calculateEpipolarDistances(orb_frameInfo_first.keypoints, orb_frameInfo_second.keypoints);
 
 
-    FeatureInfo surf_frameInfo_first, surf_frameInfo_second;
-    cv::Ptr<cv::xfeatures2d::SURF> surf = cv::xfeatures2d::SURF::create();
-    surf->detect(first_img, surf_frameInfo_first.keypoints);
-    surf->detect(second_img, surf_frameInfo_second.keypoints);
-    clock_t start_surf = clock();
-    surf->compute(first_img, surf_frameInfo_first.keypoints, surf_frameInfo_first.descriptors);
-    surf->compute(second_img, surf_frameInfo_second.keypoints, surf_frameInfo_second.descriptors);
-    clock_t end_surf = clock();
-    std::cout << "SURF working time: " <<  (end_surf-start_surf) << std::endl;
-    std::vector<cv::DMatch> surf_matches = MatchDescriptors(surf_frameInfo_first, surf_frameInfo_second);
-    drawKeypointsAndLines(first_img, second_img, surf_frameInfo_first, surf_frameInfo_second, surf_matches, "SURF");
+    // FeatureInfo surf_frameInfo_first, surf_frameInfo_second;
+    // cv::Ptr<cv::xfeatures2d::SURF> surf = cv::xfeatures2d::SURF::create();
+    // surf->detect(first_img, surf_frameInfo_first.keypoints);
+    // surf->detect(second_img, surf_frameInfo_second.keypoints);
+    // clock_t start_surf = clock();
+    // surf->compute(first_img, surf_frameInfo_first.keypoints, surf_frameInfo_first.descriptors);
+    // surf->compute(second_img, surf_frameInfo_second.keypoints, surf_frameInfo_second.descriptors);
+    // clock_t end_surf = clock();
+    // std::cout << "SURF working time: " <<  (end_surf-start_surf) << std::endl;
+    // std::vector<cv::DMatch> surf_matches = MatchDescriptors(surf_frameInfo_first, surf_frameInfo_second);
+    // drawKeypointsAndLines(first_img, second_img, surf_frameInfo_first, surf_frameInfo_second, surf_matches, "SURF");
+    // calculateEpipolarDistances(surf_frameInfo_first.keypoints, surf_frameInfo_second.keypoints);
 
 };
 
