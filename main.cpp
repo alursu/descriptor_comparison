@@ -1,7 +1,6 @@
 #include <iostream>
 #include <opencv2/core.hpp>
 #include <opencv2/opencv.hpp>
-// #include <opencv2/xfeatures2d.hpp>
 #include <ctime>
 #include <filesystem>
 #include <opencv2/core/utils/logger.hpp>
@@ -25,10 +24,14 @@ std::vector<cv::DMatch> MatchDescriptors(FeatureInfo const &first, FeatureInfo c
 			minDist = match.distance;
 	}
     for (auto match : matches){
-        if (match.distance < 2*minDist){
+        if (match.distance < 4*minDist){
             goodMatches.push_back(match);
         }
     }
+    std::cout << "Количество найденных точек для 1-го изображения: " << first.keypoints.size();
+    std::cout << ", для второго: " << second.keypoints.size() << std::endl;
+    std::cout << "Количество хороших точек: " << goodMatches.size() << std::endl;
+    
     return goodMatches;
 
 };
@@ -42,9 +45,11 @@ void drawKeypointsAndLines (cv::Mat &first_img, cv::Mat &second_img, FeatureInfo
 
     cv::drawKeypoints(first_img, first.keypoints, img);
     cv::drawKeypoints(second_img, second.keypoints, img_2);
-
     cv::drawMatches(img, first.keypoints, img_2, second.keypoints, goodMatches, result);
+
+    cv::namedWindow(window_name, cv::WINDOW_KEEPRATIO);
     cv::imshow(window_name, result);
+    cv::resizeWindow(window_name, 600, 600);
     cv::waitKey();
     
 };
@@ -66,25 +71,35 @@ void calculateAndPrintStatistics(std::vector<double> &distances) {
     }
 
     std::cout << "Среднее значение: " << mean << ", медианное значение: " << median << std::endl;
+    std::cout << std::endl;
 
 }
 
-void calculateEpipolarDistances (std::vector<cv::KeyPoint> &keypoints_first, std::vector<cv::KeyPoint> &keypoints_second){
+void calculateEpipolarDistances (std::vector<cv::KeyPoint> &keypoints_first, 
+    std::vector<cv::KeyPoint> &keypoints_second, std::vector<cv::DMatch> &goodMatches){
     
     std::vector<cv::Point2f> keypoints_first_point2f;
     std::vector<cv::Point2f> keypoints_second_point2f;
-    cv::KeyPoint::convert(keypoints_first, keypoints_first_point2f);
-    cv::KeyPoint::convert(keypoints_second, keypoints_second_point2f);
+
+    for (int i = 0; i < goodMatches.size(); ++i){
+
+        int first_img_keypoint_index = goodMatches[i].queryIdx;
+        int second_img_keypoint_index = goodMatches[i].trainIdx;
+
+        keypoints_first_point2f.push_back(keypoints_first[first_img_keypoint_index].pt);
+        keypoints_second_point2f.push_back(keypoints_second[second_img_keypoint_index].pt);
+    }
 
     std::vector<cv::Point3f> lines_first, lines_second;
     std::vector<double> distances;
 
     cv::Mat fundamental_matrix = cv::findFundamentalMat(keypoints_first_point2f, keypoints_second_point2f,cv::USAC_MAGSAC);
     if (fundamental_matrix.rows == 3 && fundamental_matrix.cols == 3){
+
         cv::computeCorrespondEpilines(keypoints_first_point2f, 1, fundamental_matrix, lines_first);
         cv::computeCorrespondEpilines(keypoints_second_point2f, 2, fundamental_matrix.t(), lines_second);
 
-        for (int i = 0; i<keypoints_first.size(); ++i){
+        for (int i = 0; i<keypoints_first_point2f.size(); ++i){
             double distance_first = std::abs(
                 lines_first[i].x * keypoints_first_point2f[i].x +
                 lines_first[i].y * keypoints_first_point2f[i].y +
@@ -121,7 +136,7 @@ void detectAndComputeAllDescriptors (cv::Mat &first_img, cv::Mat &second_img){
     std::cout << "BRISK working time: " <<  (end_brisk-start_brisk) << std::endl;
     std::vector<cv::DMatch> brisk_matches = MatchDescriptors(brisk_frameInfo_first, brisk_frameInfo_second);
     drawKeypointsAndLines(first_img, second_img, brisk_frameInfo_first, brisk_frameInfo_second, brisk_matches, "BRISK");
-    calculateEpipolarDistances(brisk_frameInfo_first.keypoints, brisk_frameInfo_second.keypoints);
+    calculateEpipolarDistances(brisk_frameInfo_first.keypoints, brisk_frameInfo_second.keypoints, brisk_matches);
 
 
     FeatureInfo sift_frameInfo_first, sift_frameInfo_second;
@@ -135,7 +150,7 @@ void detectAndComputeAllDescriptors (cv::Mat &first_img, cv::Mat &second_img){
     std::cout << "SIFT working time: " <<  (end_sift-start_sift) << std::endl;
     std::vector<cv::DMatch> sift_matches = MatchDescriptors(sift_frameInfo_first, sift_frameInfo_second);
     drawKeypointsAndLines(first_img, second_img, sift_frameInfo_first, sift_frameInfo_second, sift_matches, "SIFT");
-    calculateEpipolarDistances(sift_frameInfo_first.keypoints, sift_frameInfo_second.keypoints);
+    calculateEpipolarDistances(sift_frameInfo_first.keypoints, sift_frameInfo_second.keypoints, sift_matches);
     
 
     FeatureInfo orb_frameInfo_first, orb_frameInfo_second;
@@ -149,28 +164,14 @@ void detectAndComputeAllDescriptors (cv::Mat &first_img, cv::Mat &second_img){
     std::cout << "ORB working time: " <<  (end_orb-start_orb) << std::endl;
     std::vector<cv::DMatch> orb_matches = MatchDescriptors(orb_frameInfo_first, orb_frameInfo_second);
     drawKeypointsAndLines(first_img, second_img, orb_frameInfo_first, orb_frameInfo_second, orb_matches, "ORB");
-    calculateEpipolarDistances(orb_frameInfo_first.keypoints, orb_frameInfo_second.keypoints);
-
-
-    // FeatureInfo surf_frameInfo_first, surf_frameInfo_second;
-    // cv::Ptr<cv::xfeatures2d::SURF> surf = cv::xfeatures2d::SURF::create();
-    // surf->detect(first_img, surf_frameInfo_first.keypoints);
-    // surf->detect(second_img, surf_frameInfo_second.keypoints);
-    // clock_t start_surf = clock();
-    // surf->compute(first_img, surf_frameInfo_first.keypoints, surf_frameInfo_first.descriptors);
-    // surf->compute(second_img, surf_frameInfo_second.keypoints, surf_frameInfo_second.descriptors);
-    // clock_t end_surf = clock();
-    // std::cout << "SURF working time: " <<  (end_surf-start_surf) << std::endl;
-    // std::vector<cv::DMatch> surf_matches = MatchDescriptors(surf_frameInfo_first, surf_frameInfo_second);
-    // drawKeypointsAndLines(first_img, second_img, surf_frameInfo_first, surf_frameInfo_second, surf_matches, "SURF");
-    // calculateEpipolarDistances(surf_frameInfo_first.keypoints, surf_frameInfo_second.keypoints);
+    calculateEpipolarDistances(orb_frameInfo_first.keypoints, orb_frameInfo_second.keypoints, orb_matches);
 
 };
 
 int main(){
 
     cv::utils::logging::setLogLevel(cv::utils::logging::LogLevel::LOG_LEVEL_ERROR);
-    for (int i = 1; i <=10 ; ++i){
+    for (int i = 1; i < 6 ; ++i){
         std::stringstream first_file;
         std:: stringstream second_file;
 
