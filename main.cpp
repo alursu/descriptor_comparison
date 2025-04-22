@@ -12,22 +12,17 @@ struct FeatureInfo
 };
 
 std::vector<cv::DMatch> MatchDescriptors(FeatureInfo const &first, FeatureInfo const &second){
-   
-    cv::Ptr<cv::DescriptorMatcher> matcher = cv::BFMatcher::create(cv::NORM_L2, false);
-	std::vector<cv::DMatch> matches;
+
+    cv::Ptr<cv::DescriptorMatcher> m_pMatcher = cv::BFMatcher::create(cv::NORM_L2, false);
     std::vector<cv::DMatch> goodMatches;
-    matcher->match(first.descriptors, second.descriptors, matches);
-    double minDist = 100;
-	for (auto match : matches)
+	std::vector<std::vector<cv::DMatch>> knnMatches;
+	m_pMatcher->knnMatch(first.descriptors, second.descriptors, knnMatches,2);
+	for (auto match : knnMatches)
 	{
-		if (match.distance < minDist)
-			minDist = match.distance;
+		if (match[0].distance < 0.75 * match[1].distance)
+			goodMatches.push_back(match[0]);
 	}
-    for (auto match : matches){
-        if (match.distance < 4*minDist){
-            goodMatches.push_back(match);
-        }
-    }
+
     std::cout << "Количество найденных точек для 1-го изображения: " << first.keypoints.size();
     std::cout << ", для второго: " << second.keypoints.size() << std::endl;
     std::cout << "Количество хороших точек: " << goodMatches.size() << std::endl;
@@ -75,8 +70,9 @@ void calculateAndPrintStatistics(std::vector<double> &distances) {
 
 }
 
-void calculateEpipolarDistances (std::vector<cv::KeyPoint> &keypoints_first, 
-    std::vector<cv::KeyPoint> &keypoints_second, std::vector<cv::DMatch> &goodMatches){
+void calculateEpipolarDistancesShowEpilines (std::vector<cv::KeyPoint> &keypoints_first, 
+    std::vector<cv::KeyPoint> &keypoints_second, std::vector<cv::DMatch> &goodMatches, 
+    cv::Mat &first_img, cv::Mat &second_img){
     
     std::vector<cv::Point2f> keypoints_first_point2f;
     std::vector<cv::Point2f> keypoints_second_point2f;
@@ -93,11 +89,16 @@ void calculateEpipolarDistances (std::vector<cv::KeyPoint> &keypoints_first,
     std::vector<cv::Point3f> lines_first, lines_second;
     std::vector<double> distances;
 
+    //изображения для отображения эпиполярных линий
+    cv::Mat first_img_clone = first_img.clone();
+    cv::Mat second_img_clone = second_img.clone();
+    int c = second_img_clone.cols;
+
     cv::Mat fundamental_matrix = cv::findFundamentalMat(keypoints_first_point2f, keypoints_second_point2f,cv::USAC_MAGSAC);
     if (fundamental_matrix.rows == 3 && fundamental_matrix.cols == 3){
 
         cv::computeCorrespondEpilines(keypoints_first_point2f, 1, fundamental_matrix, lines_first);
-        cv::computeCorrespondEpilines(keypoints_second_point2f, 2, fundamental_matrix.t(), lines_second);
+        cv::computeCorrespondEpilines(keypoints_second_point2f, 2, fundamental_matrix, lines_second);
 
         for (int i = 0; i<keypoints_first_point2f.size(); ++i){
             double distance_first = std::abs(
@@ -115,7 +116,26 @@ void calculateEpipolarDistances (std::vector<cv::KeyPoint> &keypoints_first,
                           std::pow(lines_second[i].y, 2));
             
             distances.push_back(distance_first + distance_second);
+
+            //строим линии по точкам для x = 0 и x = с (ширина изображения), y вычисляется
+            //путем подстановки x в следующее уравнение: ax+by+c=0, где a,b,c - коэффициенты
+            // вычисленные методом cv::computeCorrespondEpilines() и записанные в lines_first, lines_second
+            cv::line(second_img_clone, cv::Point2f(0, -lines_first[i].z/lines_first[i].y), 
+                     cv::Point2f(c, -(c*lines_first[i].x + lines_first[i].z)/lines_first[i].y), 
+                     cv::Scalar(255), 1);
+
+            cv::line(first_img_clone, cv::Point2f(0, -lines_second[i].z/lines_second[i].y), 
+                     cv::Point2f(c, -(c*lines_second[i].x + lines_second[i].z)/lines_second[i].y), 
+                     cv::Scalar(255), 1);
         }
+
+        cv::hconcat(first_img_clone,second_img_clone,first_img_clone);
+
+        cv::namedWindow("epipolar lines", cv::WINDOW_KEEPRATIO);
+        cv::imshow("epipolar lines", first_img_clone);
+        cv::resizeWindow("epipolar lines", 600, 600);
+        cv::waitKey(0);
+
         calculateAndPrintStatistics(distances);
     } else {
         std::cout << "Error, uncorrect fundamental matrix" << std::endl;
@@ -136,7 +156,8 @@ void detectAndComputeAllDescriptors (cv::Mat &first_img, cv::Mat &second_img){
     std::cout << "BRISK working time: " <<  (end_brisk-start_brisk) << std::endl;
     std::vector<cv::DMatch> brisk_matches = MatchDescriptors(brisk_frameInfo_first, brisk_frameInfo_second);
     drawKeypointsAndLines(first_img, second_img, brisk_frameInfo_first, brisk_frameInfo_second, brisk_matches, "BRISK");
-    calculateEpipolarDistances(brisk_frameInfo_first.keypoints, brisk_frameInfo_second.keypoints, brisk_matches);
+    calculateEpipolarDistancesShowEpilines(brisk_frameInfo_first.keypoints, brisk_frameInfo_second.keypoints, 
+                                           brisk_matches, first_img, second_img);
 
 
     FeatureInfo sift_frameInfo_first, sift_frameInfo_second;
@@ -150,7 +171,8 @@ void detectAndComputeAllDescriptors (cv::Mat &first_img, cv::Mat &second_img){
     std::cout << "SIFT working time: " <<  (end_sift-start_sift) << std::endl;
     std::vector<cv::DMatch> sift_matches = MatchDescriptors(sift_frameInfo_first, sift_frameInfo_second);
     drawKeypointsAndLines(first_img, second_img, sift_frameInfo_first, sift_frameInfo_second, sift_matches, "SIFT");
-    calculateEpipolarDistances(sift_frameInfo_first.keypoints, sift_frameInfo_second.keypoints, sift_matches);
+    calculateEpipolarDistancesShowEpilines(sift_frameInfo_first.keypoints, sift_frameInfo_second.keypoints, 
+                                           sift_matches, first_img, second_img);
     
 
     FeatureInfo orb_frameInfo_first, orb_frameInfo_second;
@@ -164,14 +186,15 @@ void detectAndComputeAllDescriptors (cv::Mat &first_img, cv::Mat &second_img){
     std::cout << "ORB working time: " <<  (end_orb-start_orb) << std::endl;
     std::vector<cv::DMatch> orb_matches = MatchDescriptors(orb_frameInfo_first, orb_frameInfo_second);
     drawKeypointsAndLines(first_img, second_img, orb_frameInfo_first, orb_frameInfo_second, orb_matches, "ORB");
-    calculateEpipolarDistances(orb_frameInfo_first.keypoints, orb_frameInfo_second.keypoints, orb_matches);
+    calculateEpipolarDistancesShowEpilines(orb_frameInfo_first.keypoints, orb_frameInfo_second.keypoints, 
+                                           orb_matches, first_img, second_img);
 
 };
 
 int main(){
 
     cv::utils::logging::setLogLevel(cv::utils::logging::LogLevel::LOG_LEVEL_ERROR);
-    for (int i = 1; i < 6 ; ++i){
+    for (int i = 4; i < 6 ; ++i){
         std::stringstream first_file;
         std:: stringstream second_file;
 
