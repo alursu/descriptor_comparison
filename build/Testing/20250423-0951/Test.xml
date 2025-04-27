@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Site BuildName="Win32-MSBuild"
+	BuildStamp="20250423-0951-Experimental"
+	Name="DESKTOP-08340HJ"
+	Generator="ctest-3.30.0-rc4"
+	CompilerName="C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.43.34808/bin/Hostx64/x64/cl.exe"
+	CompilerVersion="19.43.34809.0"
+	OSName="Windows"
+	Hostname="DESKTOP-08340HJ"
+	OSRelease=" Personal"
+	OSVersion=" (Build 19045)"
+	OSPlatform="AMD64"
+	Is64Bits="1"
+	VendorString="AuthenticAMD"
+	VendorID="Advanced Micro Devices"
+	FamilyID="15"
+	ModelID="8"
+	ProcessorCacheSize="64"
+	NumberOfLogicalCPU="12"
+	NumberOfPhysicalCPU="6"
+	TotalVirtualMemory="16730"
+	TotalPhysicalMemory="7514"
+	LogicalProcessorsPerPhysical="2"
+	ProcessorClockFrequency="2095"
+	>
+	<Testing>
+		<StartDateTime>Apr 23 12:51 RTZ 2 (зима)</StartDateTime>
+		<StartTestTime>1745401889</StartTestTime>
+		<TestList/>
+		<EndDateTime>Apr 23 12:51 RTZ 2 (зима)</EndDateTime>
+		<EndTestTime>1745401889</EndTestTime>
+		<ElapsedMinutes>0</ElapsedMinutes>
+	</Testing>
+</Site>

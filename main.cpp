@@ -11,9 +11,15 @@ struct FeatureInfo
 	cv::Mat descriptors;
 };
 
-std::vector<cv::DMatch> MatchDescriptors(FeatureInfo const &first, FeatureInfo const &second){
+std::vector<cv::DMatch> MatchDescriptors(FeatureInfo const &first, 
+    FeatureInfo const &second, std::string method){
 
-    cv::Ptr<cv::DescriptorMatcher> m_pMatcher = cv::BFMatcher::create(cv::NORM_L2, false);
+    cv::Ptr<cv::DescriptorMatcher> m_pMatcher;
+    if (method == "SIFT")
+        m_pMatcher = cv::BFMatcher::create(cv::NORM_L2, false);        
+    else
+        m_pMatcher = cv::BFMatcher::create(cv::NORM_HAMMING, false);
+
     std::vector<cv::DMatch> goodMatches;
 	std::vector<std::vector<cv::DMatch>> knnMatches;
 	m_pMatcher->knnMatch(first.descriptors, second.descriptors, knnMatches,2);
@@ -94,7 +100,7 @@ void calculateEpipolarDistancesShowEpilines (std::vector<cv::KeyPoint> &keypoint
     cv::Mat second_img_clone = second_img.clone();
     int c = second_img_clone.cols;
 
-    cv::Mat fundamental_matrix = cv::findFundamentalMat(keypoints_first_point2f, keypoints_second_point2f,cv::USAC_MAGSAC);
+    cv::Mat fundamental_matrix = cv::findFundamentalMat(keypoints_first_point2f, keypoints_second_point2f,cv::RANSAC);
     if (fundamental_matrix.rows == 3 && fundamental_matrix.cols == 3){
 
         cv::computeCorrespondEpilines(keypoints_first_point2f, 1, fundamental_matrix, lines_first);
@@ -154,7 +160,7 @@ void detectAndComputeAllDescriptors (cv::Mat &first_img, cv::Mat &second_img){
     brisk->compute(second_img, brisk_frameInfo_second.keypoints, brisk_frameInfo_second.descriptors);
     clock_t end_brisk = clock();
     std::cout << "BRISK working time: " <<  (end_brisk-start_brisk) << std::endl;
-    std::vector<cv::DMatch> brisk_matches = MatchDescriptors(brisk_frameInfo_first, brisk_frameInfo_second);
+    std::vector<cv::DMatch> brisk_matches = MatchDescriptors(brisk_frameInfo_first, brisk_frameInfo_second, "BRISK");
     drawKeypointsAndLines(first_img, second_img, brisk_frameInfo_first, brisk_frameInfo_second, brisk_matches, "BRISK");
     calculateEpipolarDistancesShowEpilines(brisk_frameInfo_first.keypoints, brisk_frameInfo_second.keypoints, 
                                            brisk_matches, first_img, second_img);
@@ -169,7 +175,7 @@ void detectAndComputeAllDescriptors (cv::Mat &first_img, cv::Mat &second_img){
     sift->compute(second_img, sift_frameInfo_second.keypoints, sift_frameInfo_second.descriptors);
     clock_t end_sift = clock();
     std::cout << "SIFT working time: " <<  (end_sift-start_sift) << std::endl;
-    std::vector<cv::DMatch> sift_matches = MatchDescriptors(sift_frameInfo_first, sift_frameInfo_second);
+    std::vector<cv::DMatch> sift_matches = MatchDescriptors(sift_frameInfo_first, sift_frameInfo_second, "SIFT");
     drawKeypointsAndLines(first_img, second_img, sift_frameInfo_first, sift_frameInfo_second, sift_matches, "SIFT");
     calculateEpipolarDistancesShowEpilines(sift_frameInfo_first.keypoints, sift_frameInfo_second.keypoints, 
                                            sift_matches, first_img, second_img);
@@ -184,7 +190,7 @@ void detectAndComputeAllDescriptors (cv::Mat &first_img, cv::Mat &second_img){
     orb->compute(second_img, orb_frameInfo_second.keypoints, orb_frameInfo_second.descriptors);
     clock_t end_orb = clock();
     std::cout << "ORB working time: " <<  (end_orb-start_orb) << std::endl;
-    std::vector<cv::DMatch> orb_matches = MatchDescriptors(orb_frameInfo_first, orb_frameInfo_second);
+    std::vector<cv::DMatch> orb_matches = MatchDescriptors(orb_frameInfo_first, orb_frameInfo_second, "ORB");
     drawKeypointsAndLines(first_img, second_img, orb_frameInfo_first, orb_frameInfo_second, orb_matches, "ORB");
     calculateEpipolarDistancesShowEpilines(orb_frameInfo_first.keypoints, orb_frameInfo_second.keypoints, 
                                            orb_matches, first_img, second_img);
@@ -194,7 +200,7 @@ void detectAndComputeAllDescriptors (cv::Mat &first_img, cv::Mat &second_img){
 int main(){
 
     cv::utils::logging::setLogLevel(cv::utils::logging::LogLevel::LOG_LEVEL_ERROR);
-    for (int i = 4; i < 6 ; ++i){
+    for (int i = 4; i < 11 ; ++i){
         std::stringstream first_file;
         std:: stringstream second_file;
 
